@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Chat Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-bg: #0f0f23;
+            --secondary-bg: #1a1a2e;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent: #00d4ff;
+            --accent-hover: #00b8e6;
+            --user-msg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bot-msg: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.1);
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 15, 35, 0.9);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent), #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .avatar.user {
+            background: var(--user-msg);
+        }
+
+        .avatar.bot {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }
+
+        .message.user .message-content {
+            background: var(--user-msg);
+            border-radius: 20px 20px 5px 20px;
+        }
+
+        .message.bot .message-content {
+            background: var(--bot-msg);
+            border-radius: 20px 20px 20px 5px;
+        }
+
+        .message-text {
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        /* Markdown styling */
+        .message-text h1, 
+        .message-text h2, 
+        .message-text h3 {
+            color: var(--accent);
+            margin: 16px 0 12px 0;
+            font-weight: 600;
+        }
+
+        .message-text h1 {
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 8px;
+        }
+
+        .message-text h2 {
+            font-size: 1.2rem;
+        }
+
+        .message-text h3 {
+            font-size: 1.1rem;
+        }
+
+        .message-text p {
+            margin: 12px 0;
+        }
+
+        .message-text ul, 
+        .message-text ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .message-text li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        .message-text strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .message-text em {
+            color: #ff6b9d;
+            font-style: italic;
+        }
+
+        .message-text code {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-text pre {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .message-text pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-text blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .message-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background: var(--secondary-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .message-text th, 
+        .message-text td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .message-text th {
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+        }
+
+        .message-text tr:last-child td {
+            border-bottom: none;
+        }
+
+        .message-text tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .financial-highlight {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(255, 107, 157, 0.1));
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .profit-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .company-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .profit-amount {
+            color: #00ff88;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .typing-indicator.show {
+            display: flex;
+        }
+
+        .typing-dots {
+            background: var(--bot-msg);
+            padding: 16px 20px;
+            border-radius: 20px 20px 20px 5px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 1.4s infinite ease-in-out;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+            0%, 60%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            30% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .input-container {
+            padding: 20px;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+            max-width: 100%;
+            position: relative;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+            resize: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            min-height: 24px;
+            max-height: 150px;
+            line-height: 1.5;
+        }
+
+        .message-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .send-button, .voice-button {
+            padding: 16px 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+
+        .voice-button {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .voice-button.recording {
+            background: #ff4757;
+            border-color: #ff4757;
+            animation: pulse-recording 1.5s infinite;
+        }
+
+        .voice-button.processing {
+            background: #ffa502;
+            border-color: #ffa502;
+        }
+
+        @keyframes pulse-recording {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+            }
+        }
+
+        .send-button:hover:not(:disabled), .voice-button:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .voice-button:hover:not(:disabled):not(.recording) {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .send-button:disabled, .voice-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .recording-indicator {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 71, 87, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .recording-indicator.show {
+            display: flex;
+        }
+
+        .audio-preview {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .audio-preview.show {
+            display: flex;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .audio-controls button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .play-btn {
+            background: var(--accent);
+            color: white;
+        }
+
+        .play-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .delete-btn {
+            background: #ff4757;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #ff3742;
+        }
+
+        .error-message {
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            color: #ff6b6b;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .welcome-message h2 {
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        .example-questions {
+            display: grid;
+            gap: 12px;
+            margin-top: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .example-question {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+
+        .example-question:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0;
+            }
+
+            .header {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .chat-container {
+                padding: 15px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .input-container {
+                padding: 15px;
+            }
+
+            .input-wrapper {
+                gap: 8px;
+            }
+
+            .message-input,
+            .send-button,
+            .voice-button {
+                padding: 14px 16px;
+                min-width: 50px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>💰 Financial Assistant</h1>
+            <p>Your intelligent companion for investment and financial guidance</p>
+        </header>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message" id="welcomeMessage">
+                <h2>👋 Welcome to Financial Chat</h2>
+                <p>I'm here to help you with investment advice, financial data, and market insights. Ask me anything!</p>
+                
+                <div class="example-questions">
+                    <div class="example-question" onclick="sendExampleQuestion('Bagaimana cara memulai investasi untuk pemula?')">
+                        🚀 Bagaimana cara memulai investasi untuk pemula?
+                    </div>
+                    <div class="example-question" onclick="sendExampleQuestion('Apa saja jenis investasi yang cocok untuk jangka panjang?')">
+                        📈 Apa saja jenis investasi yang cocok untuk jangka panjang?
+                    </div>
+                    <div class="example-question" onclick="sendExampleQuestion('Bagaimana cara diversifikasi portfolio yang baik?')">
+                        🎯 Bagaimana cara diversifikasi portfolio yang baik?
+                    </div>
+                    <div class="example-question" onclick="sendExampleQuestion('Kapan waktu yang tepat untuk membeli saham?')">
+                        ⏰ Kapan waktu yang tepat untuk membeli saham?
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="avatar bot">🤖</div>
+                <div class="typing-dots">
+                    <div class="dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="audio-preview" id="audioPreview">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>🎙️ Audio recorded</span>
+                    <span id="audioDuration">0:00</span>
+                </div>
+                <audio id="audioPlayback" controls style="width: 100%; margin: 8px 0;"></audio>
+                <div class="audio-controls">
+                    <button class="play-btn" onclick="playRecording()">▶️ Play</button>
+                    <button class="delete-btn" onclick="deleteRecording()">🗑️ Delete</button>
+                </div>
+            </div>
+            
+            <div class="input-wrapper">
+                <div class="recording-indicator" id="recordingIndicator">
+                    🎙️ Recording... <span id="recordingTime">0:00</span>
+                </div>
+                
+                <textarea 
+                    class="message-input" 
+                    id="messageInput" 
+                    placeholder="Type your message or record audio..."
+                    rows="1"
+                ></textarea>
+                
+                <button class="voice-button" id="voiceButton" onclick="toggleRecording()" title="Record voice message">
+                    🎙️
+                </button>
+                
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    📤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script>
+        const API_URL = 'https://fin-n8n-preworkshop.app.n8n.cloud/webhook/chat_financial';
+        let isWaiting = false;
+
+        // Configure marked for better formatting
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Audio recording variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioBlob = null;
+        let isRecording = false;
+        let recordingStartTime = 0;
+        let recordingTimer = null;
+        let audioStream = null;
+
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const voiceButton = document.getElementById('voiceButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+        const audioPreview = document.getElementById('audioPreview');
+        const audioPlayback = document.getElementById('audioPlayback');
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Handle Enter key (don't send while recording)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !isRecording) {
+                e.preventDefault();
+                if (!isWaiting && (this.value.trim() || recordedAudioBlob)) {
+                    sendMessage();
+                }
+            }
+        });
+
+        function sendExampleQuestion(question) {
+            messageInput.value = question;
+            sendMessage();
+        }
+
+        // Audio recording functions
+        async function initializeAudio() {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    } 
+                });
+                return true;
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                alert('Unable to access microphone. Please check permissions.');
+                return false;
+            }
+        }
+
+        async function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
+        async function startRecording() {
+            if (isWaiting) {
+                console.log('Cannot start recording: currently waiting for response');
+                return;
+            }
+
+            const hasAudio = audioStream || await initializeAudio();
+            if (!hasAudio) return;
+
+            try {
+                audioChunks = [];
+                recordedAudioBlob = null; // Reset previous recording
+                
+                // Check MediaRecorder support
+                if (!window.MediaRecorder) {
+                    throw new Error('MediaRecorder not supported in this browser');
+                }
+                
+                // Try different MIME types for better compatibility
+                let mimeType = 'audio/webm;codecs=opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/webm';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = 'audio/mp4';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {
+                            mimeType = ''; // Let browser choose
+                        }
+                    }
+                }
+                
+                console.log('Starting recording with MIME type:', mimeType || 'browser default');
+
+                mediaRecorder = new MediaRecorder(audioStream, 
+                    mimeType ? { mimeType: mimeType } : undefined
+                );
+
+                mediaRecorder.ondataavailable = (event) => {
+                    console.log('Audio data available:', event.data.size, 'bytes');
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    console.log('Recording stopped, processing chunks...');
+                    console.log('Total chunks:', audioChunks.length);
+                    
+                    if (audioChunks.length === 0) {
+                        console.error('No audio chunks recorded!');
+                        alert('No audio was recorded. Please try again.');
+                        resetVoiceButton();
+                        return;
+                    }
+                    
+                    try {
+                        recordedAudioBlob = new Blob(audioChunks, { 
+                            type: mimeType || 'audio/webm' 
+                        });
+                        
+                        console.log('Audio blob created:', {
+                            size: recordedAudioBlob.size,
+                            type: recordedAudioBlob.type
+                        });
+                        
+                        if (recordedAudioBlob.size === 0) {
+                            throw new Error('Created blob is empty');
+                        }
+                        
+                        showAudioPreview();
+                        resetVoiceButton();
+                        
+                    } catch (error) {
+                        console.error('Error creating audio blob:', error);
+                        alert('Error processing audio: ' + error.message);
+                        resetVoiceButton();
+                    }
+                };
+
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event.error);
+                    alert('Recording error: ' + event.error);
+                    resetVoiceButton();
+                };
+
+                mediaRecorder.start(1000); // Collect data every 1 second
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                // Update UI
+                voiceButton.classList.add('recording');
+                voiceButton.innerHTML = '⏹️';
+                voiceButton.title = 'Stop recording';
+                recordingIndicator.classList.add('show');
+                messageInput.placeholder = 'Recording audio... Click stop when done';
+                
+                // Start timer
+                recordingTimer = setInterval(updateRecordingTime, 1000);
+                updateRecordingTime();
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                alert('Error starting recording: ' + error.message);
+                resetVoiceButton();
+            }
+        }
+
+        function resetVoiceButton() {
+            voiceButton.classList.remove('recording', 'processing');
+            voiceButton.innerHTML = '🎙️';
+            voiceButton.title = 'Record voice message';
+            messageInput.placeholder = 'Type your message or record audio...';
+        }
+
+        function stopRecording() {
+            if (!isRecording || !mediaRecorder) {
+                console.log('Cannot stop recording: not currently recording');
+                return;
+            }
+
+            console.log('Stopping recording...');
+            console.log('MediaRecorder state:', mediaRecorder.state);
+            console.log('Audio chunks collected:', audioChunks.length);
+
+            mediaRecorder.stop();
+            isRecording = false;
+            
+            // Update UI
+            voiceButton.classList.remove('recording');
+            voiceButton.classList.add('processing');
+            voiceButton.innerHTML = '⏳';
+            voiceButton.title = 'Processing audio...';
+            recordingIndicator.classList.remove('show');
+            messageInput.placeholder = 'Processing audio...';
+            
+            // Clear timer
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+            }
+
+            // MediaRecorder.onstop will be called automatically
+            // We don't need to manually create the blob here
+        }
+
+        function updateRecordingTime() {
+            if (!isRecording) return;
+            
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            
+            document.getElementById('recordingTime').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function showAudioPreview() {
+            if (!recordedAudioBlob) {
+                console.error('No recorded audio blob to preview');
+                return;
+            }
+
+            console.log('Showing audio preview for blob:', {
+                size: recordedAudioBlob.size,
+                type: recordedAudioBlob.type
+            });
+
+            try {
+                const audioUrl = URL.createObjectURL(recordedAudioBlob);
+                audioPlayback.src = audioUrl;
+                
+                // Calculate duration (approximate)
+                audioPlayback.onloadedmetadata = () => {
+                    const duration = audioPlayback.duration;
+                    if (isFinite(duration)) {
+                        const minutes = Math.floor(duration / 60);
+                        const seconds = Math.floor(duration % 60);
+                        document.getElementById('audioDuration').textContent = 
+                            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        document.getElementById('audioDuration').textContent = 'Unknown';
+                    }
+                };
+
+                audioPreview.classList.add('show');
+                messageInput.placeholder = 'Audio ready to send! Type additional text or click send.';
+                
+                console.log('Audio preview shown successfully');
+                
+            } catch (error) {
+                console.error('Error creating audio preview:', error);
+                alert('Error creating audio preview: ' + error.message);
+                deleteRecording();
+            }
+        }
+
+        function playRecording() {
+            if (audioPlayback.src) {
+                audioPlayback.play();
+            }
+        }
+
+        function deleteRecording() {
+            recordedAudioBlob = null;
+            audioPreview.classList.remove('show');
+            audioPlayback.src = '';
+            messageInput.placeholder = 'Type your message or record audio...';
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            const hasAudio = recordedAudioBlob !== null;
+            
+            if (!message && !hasAudio || isWaiting) return;
+
+            // Hide welcome message on first interaction
+            if (welcomeMessage) {
+                welcomeMessage.style.display = 'none';
+            }
+
+            // Add user message (show text if available, otherwise indicate audio)
+            const displayMessage = message || '🎙️ [Voice message]';
+            addMessage(displayMessage, 'user');
+            
+            // Clear input and audio
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            deleteRecording();
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            isWaiting = true;
+            sendButton.disabled = true;
+            voiceButton.disabled = true;
+
+            try {
+                let response;
+                
+                if (hasAudio) {
+                    // Validate audio blob before processing
+                    if (!recordedAudioBlob || !(recordedAudioBlob instanceof Blob)) {
+                        throw new Error('Invalid audio blob - please record again');
+                    }
+                    
+                    if (recordedAudioBlob.size === 0) {
+                        throw new Error('Empty audio recording - please try again');
+                    }
+                    
+                    console.log('Sending audio message with blob:', {
+                        size: recordedAudioBlob.size,
+                        type: recordedAudioBlob.type
+                    });
+                    
+                    try {
+                        const audioBase64 = await blobToBase64(recordedAudioBlob);
+                        console.log('Audio converted to base64, length:', audioBase64.length);
+                        
+                        response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            mode: 'cors', // Explicitly set CORS mode
+                            body: JSON.stringify({
+                                chatInput: message || '[Voice message - Audio processing not yet supported by webhook]',
+                                audioData: audioBase64,
+                                hasAudio: true,
+                                audioMimeType: recordedAudioBlob.type,
+                                audioSize: recordedAudioBlob.size
+                            })
+                        });
+                        
+                    } catch (audioError) {
+                        console.error('Audio processing error:', audioError);
+                        throw new Error('Failed to process audio: ' + audioError.message);
+                    }
+
+                } else {
+                    // Send text only (existing functionality)
+                    console.log('Sending text message...');
+                    
+                    response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        mode: 'cors', // Explicitly set CORS mode
+                        body: JSON.stringify({
+                            chatInput: message
+                        })
+                    });
+                }
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Server response:', data);
+                
+                // Simulate realistic processing delay
+                await new Promise(resolve => setTimeout(resolve, hasAudio ? 2000 : 1000));
+                
+                hideTypingIndicator();
+                
+                if (data.AIResponse) {
+                    addMessage(data.AIResponse, 'bot');
+                } else {
+                    throw new Error('No AIResponse field in server response');
+                }
+
+            } catch (error) {
+                console.error('Detailed error:', error);
+                hideTypingIndicator();
+                
+                let errorMessage = 'Maaf, terjadi kesalahan saat menghubungi server. Silakan coba lagi.';
+                
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = '❌ Tidak dapat terhubung ke server. Kemungkinan masalah:\n• Koneksi internet terputus\n• Server webhook tidak aktif\n• CORS policy belum dikonfigurasi';
+                } else if (error.message.includes('500')) {
+                    errorMessage = '⚠️ Server error (500). Kemungkinan:\n• Webhook tidak mendukung format data ini\n• Error dalam pemrosesan di n8n workflow';
+                } else if (error.message.includes('405')) {
+                    errorMessage = '🚫 Method not allowed (405). Webhook tidak menerima POST request.';
+                } else if (error.message.includes('415')) {
+                    errorMessage = '📄 Unsupported media type (415). Webhook tidak mendukung JSON data.';
+                } else if (error.message.includes('No AIResponse')) {
+                    errorMessage = '🔄 Server merespons tapi tidak ada field AIResponse. Cek konfigurasi workflow n8n.';
+                } else if (error.message.includes('Invalid audio blob')) {
+                    errorMessage = '🎙️ Audio recording invalid. Silakan coba record ulang.';
+                } else if (error.message.includes('Empty audio recording')) {
+                    errorMessage = '🎙️ Audio recording kosong. Pastikan microphone berfungsi dan coba lagi.';
+                } else if (error.message.includes('Failed to process audio')) {
+                    errorMessage = '🎙️ Gagal memproses audio. Coba record ulang atau gunakan text.';
+                }
+                
+                // Add detailed error for debugging
+                errorMessage += `\n\n🔧 Technical details:\n${error.message}`;
+                
+                addMessage(errorMessage, 'bot', true);
+            }
+
+            isWaiting = false;
+            sendButton.disabled = false;
+            voiceButton.disabled = false;
+            messageInput.focus();
+        }
+
+        // Helper function to convert blob to base64 with validation
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                // Validate blob first
+                if (!blob || !(blob instanceof Blob)) {
+                    reject(new Error('Invalid blob object provided'));
+                    return;
+                }
+                
+                if (blob.size === 0) {
+                    reject(new Error('Empty blob provided'));
+                    return;
+                }
+                
+                console.log('Converting blob to base64:', {
+                    type: blob.type,
+                    size: blob.size,
+                    constructor: blob.constructor.name
+                });
+                
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    try {
+                        const base64 = reader.result.split(',')[1]; // Remove data:audio/webm;base64, prefix
+                        resolve(base64);
+                    } catch (error) {
+                        reject(new Error('Failed to process base64 data: ' + error.message));
+                    }
+                };
+                reader.onerror = () => {
+                    reject(new Error('FileReader error: ' + reader.error));
+                };
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        function addMessage(text, sender, isError = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender}`;
+            avatar.textContent = sender === 'user' ? '👤' : '🤖';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            if (isError) {
+                contentDiv.classList.add('error-message');
+            }
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            
+            if (sender === 'bot' && !isError) {
+                // Parse markdown for bot responses
+                const htmlContent = marked.parse(text);
+                textDiv.innerHTML = enhanceFinancialData(htmlContent);
+            } else {
+                textDiv.textContent = text;
+            }
+            
+            contentDiv.appendChild(textDiv);
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            
+            // Insert before typing indicator
+            chatContainer.insertBefore(messageDiv, typingIndicator);
+            
+            // Scroll to bottom
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+
+        function enhanceFinancialData(htmlContent) {
+            // Enhance financial data presentation
+            let enhanced = htmlContent;
+            
+            // Convert numbered lists of companies to styled profit items
+            enhanced = enhanced.replace(/<ol>([\s\S]*?)<\/ol>/gi, function(match, listContent) {
+                if (listContent.includes('trillion') || listContent.includes('triliun') || listContent.includes('IDR')) {
+                    // This looks like a financial ranking list
+                    const items = listContent.match(/<li>([\s\S]*?)<\/li>/gi);
+                    if (items) {
+                        let styledItems = items.map(item => {
+                            let content = item.replace(/<\/?li>/gi, '');
+                            
+                            // Extract company name and amount
+                            const match = content.match(/^(.*?):\s*(.*?)(?:\.|$)/);
+                            if (match) {
+                                const [, company, amount] = match;
+                                return `
+                                    <div class="profit-item">
+                                        <span class="company-name">${company.trim()}</span>
+                                        <span class="profit-amount">${amount.trim()}</span>
+                                    </div>
+                                `;
+                            }
+                            return `<div class="profit-item">${content}</div>`;
+                        }).join('');
+                        
+                        return `<div class="financial-highlight">${styledItems}</div>`;
+                    }
+                }
+                return match; // Return original if not financial data
+            });
+            
+            // Highlight currency amounts (IDR, USD, etc.)
+            enhanced = enhanced.replace(/(\d{1,3}(?:[.,]\d{2,3})*)\s*(trillion|billion|million|juta|miliar|triliun)\s*(IDR|USD|Rp)/gi, 
+                '<span class="profit-amount">💰 $1 $2 $3</span>');
+            
+            // Highlight percentage gains/profits
+            enhanced = enhanced.replace(/(\d+\.?\d*)%/g, 
+                '<span class="profit-amount">📈 $1%</span>');
+            
+            // Make company names with "Tbk" stand out
+            enhanced = enhanced.replace(/\*\*([^*]+(?:Tbk|PT)[^*]*)\*\*/g, 
+                '<span class="company-name">🏢 $1</span>');
+            
+            // Add icons to section headers
+            enhanced = enhanced.replace(/<h2>([^<]+)<\/h2>/g, '<h2>📊 $1</h2>');
+            enhanced = enhanced.replace(/<h3>([^<]+)<\/h3>/g, '<h3>💡 $1</h3>');
+            
+            // Highlight risk warnings
+            enhanced = enhanced.replace(/(\*\*Risiko[^*]*\*\*)/gi, 
+                '<div style="background: rgba(255, 107, 157, 0.1); border-left: 4px solid #ff6b9d; padding: 12px; margin: 12px 0; border-radius: 8px;">⚠️ $1</div>');
+            
+            return enhanced;
+        }
+
+        function showTypingIndicator() {
+            typingIndicator.classList.add('show');
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.classList.remove('show');
+        }
+
+        // Cleanup function
+        function cleanup() {
+            if (isRecording) {
+                stopRecording();
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+            }
+        }
+
+        // Focus input on load
+        window.addEventListener('load', () => {
+            messageInput.focus();
+        });
+
+        // Handle page visibility for better UX
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                messageInput.focus();
+            } else if (isRecording) {
+                // Stop recording when page becomes hidden
+                stopRecording();
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', cleanup);
+        window.addEventListener('unload', cleanup);
+    </script>
+</body>
+</html>
